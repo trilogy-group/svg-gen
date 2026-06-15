@@ -1,0 +1,77 @@
+[
+  {
+    "srNo": 1,
+    "milestone": "M1 — Service skeleton & HTTP/CLI contract scaffolding",
+    "title": "Stand up svg-gen service skeleton with /health, stub /render, and CLI entry points",
+    "depends_on_srNos": [],
+    "issue_number": 1,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/1",
+    "created": true
+  },
+  {
+    "srNo": 2,
+    "milestone": "M2 — Constraint engine",
+    "title": "Deterministic constraint solver library and `svg-gen solve` CLI",
+    "depends_on_srNos": [
+      1
+    ],
+    "issue_number": 2,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/2",
+    "created": true
+  },
+  {
+    "srNo": 3,
+    "milestone": "M3 — Layout optimizer, math-trim, and verify-bbox",
+    "title": "Global label/angle-mark layout optimizer, math-based viewBox trim, and --verify-bbox CLI",
+    "depends_on_srNos": [
+      2
+    ],
+    "issue_number": 3,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/3",
+    "created": true
+  },
+  {
+    "srNo": 4,
+    "milestone": "M4 — v0 renderer set + deterministic test suite",
+    "title": "v0 renderer set (Rectangle, Triangle, CoordinatePlane) and deterministic geometric test suite",
+    "depends_on_srNos": [
+      3
+    ],
+    "issue_number": 4,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/4",
+    "created": true
+  },
+  {
+    "srNo": 5,
+    "milestone": "M5 — 30-scene LLM eval gate",
+    "title": "30-scene LLM constraint-emission eval gate and recorded path decision",
+    "depends_on_srNos": [
+      4
+    ],
+    "issue_number": 5,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/5",
+    "created": true
+  },
+  {
+    "srNo": 6,
+    "milestone": "M6 — LLM planner & feasibility, plus question entry point",
+    "title": "LLM feasibility check, constraint-graph planner (or anchor-model contingency), and /image/fromQuestion endpoint",
+    "depends_on_srNos": [
+      5
+    ],
+    "issue_number": 6,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/6",
+    "created": true
+  },
+  {
+    "srNo": 7,
+    "milestone": "M7 — Component coverage expansion to launch parity",
+    "title": "Port remaining component types to the constraint-graph renderer contract for launch parity",
+    "depends_on_srNos": [
+      6
+    ],
+    "issue_number": 7,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/7",
+    "created": true
+  }
+]
