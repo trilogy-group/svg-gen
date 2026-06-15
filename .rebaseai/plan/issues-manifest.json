@@ -6,7 +6,7 @@
     "depends_on_srNos": [],
     "issue_number": 1,
     "url": "https://github.com/trilogy-group/svg-gen/issues/1",
-    "created": true
+    "created": false
   },
   {
     "srNo": 2,
@@ -17,7 +17,7 @@
     ],
     "issue_number": 2,
     "url": "https://github.com/trilogy-group/svg-gen/issues/2",
-    "created": true
+    "created": false
   },
   {
     "srNo": 3,
@@ -28,7 +28,7 @@
     ],
     "issue_number": 3,
     "url": "https://github.com/trilogy-group/svg-gen/issues/3",
-    "created": true
+    "created": false
   },
   {
     "srNo": 4,
@@ -39,7 +39,7 @@
     ],
     "issue_number": 4,
     "url": "https://github.com/trilogy-group/svg-gen/issues/4",
-    "created": true
+    "created": false
   },
   {
     "srNo": 5,
@@ -50,7 +50,7 @@
     ],
     "issue_number": 5,
     "url": "https://github.com/trilogy-group/svg-gen/issues/5",
-    "created": true
+    "created": false
   },
   {
     "srNo": 6,
@@ -61,7 +61,7 @@
     ],
     "issue_number": 6,
     "url": "https://github.com/trilogy-group/svg-gen/issues/6",
-    "created": true
+    "created": false
   },
   {
     "srNo": 7,
@@ -72,6 +72,6 @@
     ],
     "issue_number": 7,
     "url": "https://github.com/trilogy-group/svg-gen/issues/7",
-    "created": true
+    "created": false
   }
 ]
