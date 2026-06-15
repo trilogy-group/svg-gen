@@ -1,0 +1,94 @@
+{
+  "id": "svg.scene-to-svg",
+  "domain": "svg",
+  "summary": "SVG diagram generation from structured scene descriptions or SAT question data: accepts a scene JSON body via HTTP POST or CLI invocation and returns an SVG string produced by an LLM-backed rendering pipeline. Runs as a standalone microservice on port 8001. Includes a question-oriented image generation endpoint that derives the scene from a question object, a CLI render command, and a CLI serve command.",
+  "surface_ids": [
+    "svg-gen-post-render",
+    "svg-gen-post-image-from-question",
+    "cli-svg-gen-render",
+    "cli-svg-gen-serve",
+    "svg-gen-get-health"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/svg-gen/src/svg_gen/web/app.py:212",
+      "claim": "POST /render accepts a scene JSON request body and returns an SVG diagram via the generation pipeline"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-gen/src/svg_gen/web/app.py:547",
+      "claim": "POST /image/fromQuestion accepts an ImageFromQuestionRequest and generates an SVG asset from question data"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-gen/src/svg_gen/web/app.py:189",
+      "claim": "GET /health returns a HealthResponse JSON for liveness probing of the svg-gen microservice"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-gen/src/svg_gen/cli.py:141",
+      "claim": "svg-gen render CLI generates an SVG from a scene description using the LLM pipeline and writes to stdout or file"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-gen/src/svg_gen/cli.py:161",
+      "claim": "svg-gen serve CLI starts the FastAPI web server on port 8001 for handling POST /render requests"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "All surfaces share the same LLM-backed rendering pipeline for scene-to-SVG conversion",
+      "evidence_refs": [0, 1, 3]
+    },
+    {
+      "statement": "The microservice runs on port 8001 by default",
+      "evidence_refs": [4]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "render scene via HTTP",
+      "given": "A structured scene JSON description",
+      "when": "POST /render is called on the svg-gen microservice",
+      "then": "An SVG diagram string is returned in the response",
+      "evidence_refs": [0]
+    },
+    {
+      "name": "generate question image",
+      "given": "A SAT math question object with relevant context",
+      "when": "POST /image/fromQuestion is called",
+      "then": "An SVG image asset derived from the question content is returned",
+      "evidence_refs": [1]
+    },
+    {
+      "name": "render scene via CLI",
+      "given": "A scene description string or file",
+      "when": "svg-gen render is invoked on the command line",
+      "then": "An SVG is written to stdout or the specified output file",
+      "evidence_refs": [3]
+    }
+  ],
+  "dependencies": [],
+  "rebuild_decisions": [
+    {
+      "name": "Deployment mode",
+      "options": [
+        "Standalone microservice on port 8001 consumed by the main generation pipeline",
+        "Inline library imported directly by the main API"
+      ],
+      "constraints_from_source": "svg-gen runs as a separate FastAPI app on port 8001",
+      "evidence_refs": [4]
+    },
+    {
+      "name": "SVG generation backend",
+      "options": [
+        "LLM-backed pipeline (current approach via litellm)",
+        "Deterministic SVG construction from scene parameters"
+      ],
+      "constraints_from_source": "Generation pipeline uses LLM calls",
+      "evidence_refs": [0, 3]
+    }
+  ],
+  "confidence": "high"
+}

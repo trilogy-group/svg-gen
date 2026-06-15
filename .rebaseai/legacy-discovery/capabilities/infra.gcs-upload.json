@@ -1,0 +1,64 @@
+{
+  "id": "infra.gcs-upload",
+  "domain": "infra",
+  "summary": "CLI utility for uploading individual files to a Google Cloud Storage bucket via the GcsUploader component: accepts a local file path (or stdin) and a destination GCS key, with an optional content-type override. Provides a reusable GcsUploader building block consumed by both the main question generation pipeline and the bulk curricula sync script.",
+  "surface_ids": [
+    "cli-gcs-uploader-upload"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/gcs-uploader/src/gcs_uploader/cli.py:41",
+      "claim": "gcs-uploader upload CLI accepts a file path or stdin, a destination GCS key, and an optional content-type override"
+    },
+    {
+      "source": "tool",
+      "ref": "components/gcs-uploader/src/gcs_uploader/cli.py:48",
+      "claim": "gcs-uploader upload calls GcsUploader.upload() and returns the upload result"
+    },
+    {
+      "source": "llm-supplement",
+      "ref": "capability-sketch.json:infra.gcs-upload.suspected.integrations",
+      "claim": "GcsUploader uses the Google Cloud Storage Python SDK for all upload operations"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "The component is a shared library consumed by the generation pipeline and the sync script, not a standalone service",
+      "evidence_refs": [0, 1]
+    },
+    {
+      "statement": "Content-type defaults are inferred from the file extension when not explicitly overridden",
+      "evidence_refs": [0]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "upload single file",
+      "given": "A local file and a target GCS bucket path",
+      "when": "gcs-uploader upload is invoked with the file path and destination",
+      "then": "The file is uploaded to the specified GCS path and the upload result is returned",
+      "evidence_refs": [0, 1]
+    },
+    {
+      "name": "upload with explicit content-type",
+      "given": "A local file with an ambiguous extension",
+      "when": "gcs-uploader upload is invoked with --content-type image/svg+xml",
+      "then": "The file is uploaded to GCS with the specified content-type header",
+      "evidence_refs": [0]
+    }
+  ],
+  "dependencies": [],
+  "rebuild_decisions": [
+    {
+      "name": "Upload abstraction layer",
+      "options": [
+        "Dedicated GcsUploader component shared across the workspace (current)",
+        "Inline GCS SDK calls in each consumer"
+      ],
+      "constraints_from_source": "GcsUploader is a standalone uv workspace component",
+      "evidence_refs": [0, 2]
+    }
+  ],
+  "confidence": "high"
+}

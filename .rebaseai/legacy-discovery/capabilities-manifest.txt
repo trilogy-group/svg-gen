@@ -1,0 +1,9 @@
+capabilities/generation.question-generation.json
+capabilities/asset-browser.gcs-browser.json
+capabilities/svg.scene-to-svg.json
+capabilities/svg.svg-to-png.json
+capabilities/image.ai-image-generation.json
+capabilities/question-bank.fetch-and-serve.json
+capabilities/devtools.question-viewer.json
+capabilities/infra.service-health.json
+capabilities/infra.gcs-upload.json

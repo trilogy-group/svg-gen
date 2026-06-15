@@ -1,0 +1,128 @@
+{
+  "id": "question-bank.fetch-and-serve",
+  "domain": "question-bank",
+  "summary": "SAT question bank acquisition and local serving: downloads topic question bundles from the InceptCurriculum API to local JSON files, then serves them via a local FastAPI server with topic listing, topic detail, HTML browse pages, PDF inline view, and PDF download endpoints for both browser and programmatic access. Used to supply training and evaluation data for the question generation pipeline.",
+  "surface_ids": [
+    "cli-question-bank-fetcher-download",
+    "cli-question-bank-fetcher-serve",
+    "question-bank-fetcher-serve",
+    "question-bank-fetcher-topic-detail",
+    "question-bank-fetcher-index-page",
+    "question-bank-fetcher-topic-page",
+    "question-bank-fetcher-pdf-view",
+    "question-bank-fetcher-pdf-download"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/cli.py:84",
+      "claim": "download CLI fetches SAT question bundles from InceptCurriculum API and saves as JSON to local data directory"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/cli.py:144",
+      "claim": "serve CLI starts a local FastAPI server on port 8765 exposing downloaded question bank data via REST API"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:148",
+      "claim": "GET /api/topics returns a JSONResponse listing all available SAT topic bundles grouped by assessment type"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:152",
+      "claim": "GET /api/topic/{slug} returns a JSONResponse with the full question bundle for the given topic slug"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:165",
+      "claim": "GET / renders an HTMLResponse listing all SAT topic bundles grouped by assessment type with links"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:170",
+      "claim": "GET /topic/{slug} renders an HTMLResponse showing the full question bundle for the given topic slug"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:161",
+      "claim": "GET /pdf/{slug} serves a topic PDF as an inline FileResponse for browser display"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:157",
+      "claim": "GET /pdf/{slug}/download serves a topic PDF as an attachment FileResponse triggering browser download"
+    },
+    {
+      "source": "llm-supplement",
+      "ref": "capability-sketch.json:question-bank.fetch-and-serve.suspected.integrations",
+      "claim": "Download CLI integrates with InceptCurriculum API at api.curriculum.inceptapi.com"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "The download step must complete before the serve step has data to expose",
+      "evidence_refs": [0, 2]
+    },
+    {
+      "statement": "The local server runs on port 8765 by default",
+      "evidence_refs": [1]
+    },
+    {
+      "statement": "Data is sourced exclusively from the InceptCurriculum API and stored as local JSON files",
+      "evidence_refs": [0, 8]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "download question bank",
+      "given": "Valid InceptCurriculum API credentials and desired assessment/domain filters",
+      "when": "question-bank-fetcher download is run",
+      "then": "SAT question bundles are saved as JSON files in the local data directory",
+      "evidence_refs": [0, 8]
+    },
+    {
+      "name": "list topics via API",
+      "given": "Previously downloaded question bank data and a running server",
+      "when": "GET /api/topics is called",
+      "then": "A JSON list of all topic bundles grouped by assessment type is returned",
+      "evidence_refs": [2]
+    },
+    {
+      "name": "browse topics in browser",
+      "given": "A running question-bank-fetcher server",
+      "when": "GET / is opened in a browser",
+      "then": "An HTML page listing all available topic bundles with navigation links is rendered",
+      "evidence_refs": [4]
+    },
+    {
+      "name": "download topic PDF",
+      "given": "A topic slug with an associated PDF asset",
+      "when": "GET /pdf/{slug}/download is requested",
+      "then": "The PDF is returned as a file attachment triggering a browser download",
+      "evidence_refs": [7]
+    }
+  ],
+  "dependencies": [],
+  "rebuild_decisions": [
+    {
+      "name": "Data persistence strategy",
+      "options": [
+        "Download to local JSON files, serve from disk (current)",
+        "Download directly into a database for richer querying"
+      ],
+      "constraints_from_source": "Data is stored as local JSON files",
+      "evidence_refs": [0, 2]
+    },
+    {
+      "name": "Question bank data source",
+      "options": [
+        "InceptCurriculum API (current)",
+        "College Board or other SAT question provider"
+      ],
+      "constraints_from_source": "Integrates with api.curriculum.inceptapi.com",
+      "evidence_refs": [8]
+    }
+  ],
+  "confidence": "high"
+}

@@ -1,0 +1,148 @@
+{
+  "surface_coverage": [
+    {
+      "surface_id": "api-post-generate",
+      "capability_ids": ["generation.question-generation"]
+    },
+    {
+      "surface_id": "api-get-generate-info",
+      "capability_ids": ["generation.question-generation"]
+    },
+    {
+      "surface_id": "browse-bucket",
+      "capability_ids": ["asset-browser.gcs-browser"]
+    },
+    {
+      "surface_id": "object-proxy",
+      "capability_ids": ["asset-browser.gcs-browser"]
+    },
+    {
+      "surface_id": "image-viewer",
+      "capability_ids": ["asset-browser.gcs-browser"]
+    },
+    {
+      "surface_id": "view-markdown",
+      "capability_ids": ["asset-browser.gcs-browser"]
+    },
+    {
+      "surface_id": "cli-sync-sat-to-gcs",
+      "capability_ids": ["asset-browser.gcs-browser"]
+    },
+    {
+      "surface_id": "svg-gen-post-render",
+      "capability_ids": ["svg.scene-to-svg"]
+    },
+    {
+      "surface_id": "svg-gen-post-image-from-question",
+      "capability_ids": ["svg.scene-to-svg"]
+    },
+    {
+      "surface_id": "cli-svg-gen-render",
+      "capability_ids": ["svg.scene-to-svg"]
+    },
+    {
+      "surface_id": "cli-svg-gen-serve",
+      "capability_ids": ["svg.scene-to-svg"]
+    },
+    {
+      "surface_id": "svg-gen-get-health",
+      "capability_ids": ["svg.scene-to-svg"]
+    },
+    {
+      "surface_id": "svg-to-image-post-convert",
+      "capability_ids": ["svg.svg-to-png"]
+    },
+    {
+      "surface_id": "svg-to-image-get-health",
+      "capability_ids": ["svg.svg-to-png"]
+    },
+    {
+      "surface_id": "cli-svg-to-image-convert",
+      "capability_ids": ["svg.svg-to-png"]
+    },
+    {
+      "surface_id": "cli-svg-to-image-convert-batch",
+      "capability_ids": ["svg.svg-to-png"]
+    },
+    {
+      "surface_id": "cli-svg-to-image-serve",
+      "capability_ids": ["svg.svg-to-png"]
+    },
+    {
+      "surface_id": "image-gen-post-generate",
+      "capability_ids": ["image.ai-image-generation"]
+    },
+    {
+      "surface_id": "image-gen-get-health",
+      "capability_ids": ["image.ai-image-generation"]
+    },
+    {
+      "surface_id": "cli-image-gen-generate",
+      "capability_ids": ["image.ai-image-generation"]
+    },
+    {
+      "surface_id": "cli-image-gen-serve",
+      "capability_ids": ["image.ai-image-generation"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-serve",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-topic-detail",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "cli-question-bank-fetcher-download",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "cli-question-bank-fetcher-serve",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-index-page",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-topic-page",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-pdf-view",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-bank-fetcher-pdf-download",
+      "capability_ids": ["question-bank.fetch-and-serve"]
+    },
+    {
+      "surface_id": "question-viewer-page",
+      "capability_ids": ["devtools.question-viewer"]
+    },
+    {
+      "surface_id": "cli-question-viewer-serve",
+      "capability_ids": ["devtools.question-viewer"]
+    },
+    {
+      "surface_id": "api-get-health",
+      "capability_ids": ["infra.service-health"]
+    },
+    {
+      "surface_id": "api-get-root",
+      "capability_ids": ["infra.service-health"]
+    },
+    {
+      "surface_id": "cli-gcs-uploader-upload",
+      "capability_ids": ["infra.gcs-upload"]
+    }
+  ],
+  "uncovered_surface_ids": [],
+  "orphan_surface_refs": [],
+  "summary": {
+    "surfaces_total": 34,
+    "surfaces_covered": 34,
+    "capabilities_total": 9,
+    "shared_surfaces": 0
+  }
+}

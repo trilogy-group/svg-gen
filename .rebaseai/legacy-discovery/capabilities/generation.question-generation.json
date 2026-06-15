@@ -1,0 +1,94 @@
+{
+  "id": "generation.question-generation",
+  "domain": "generation",
+  "summary": "Core SAT math question generation capability: accepts an InceptBench-compatible JSON request, runs the LLM generation pipeline via asyncio.gather (parallel Gemini and Claude calls through litellm), persists produced assets to Google Cloud Storage, traces execution via Langfuse, and returns the generated question JSON. Also exposes a GET introspection endpoint listing supported POST parameters.",
+  "surface_ids": [
+    "api-post-generate",
+    "api-get-generate-info"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/generate.py:79",
+      "claim": "POST /generate triggers the generation pipeline with asyncio.gather and writes results to GCS"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/generate.py:62",
+      "claim": "GET /generate returns a GenerateInfoResponse contract summary describing supported POST parameters"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/generate.py:85",
+      "claim": "POST /generate depends on verify_auth FastAPI dependency for optional Bearer/X-API-Key token auth"
+    },
+    {
+      "source": "llm-supplement",
+      "ref": "capability-sketch.json:generation.question-generation.suspected.integrations",
+      "claim": "Generation pipeline integrates Google Gemini and Anthropic Claude via litellm, Langfuse tracing, GCS asset write, and InceptBench API"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "Auth is optional: when SERVICE_AUTH_TOKEN env var is unset the endpoint is open (local dev mode)",
+      "evidence_refs": [0]
+    },
+    {
+      "statement": "Generation uses asyncio.gather for parallel LLM calls, not sequential execution",
+      "evidence_refs": [0, 3]
+    },
+    {
+      "statement": "Generated assets are stored in GCS before the response is returned",
+      "evidence_refs": [0, 3]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "happy-path generation",
+      "given": "A valid InceptBench-compatible JSON body and an optional Bearer token",
+      "when": "POST /generate is called",
+      "then": "The pipeline runs, assets are written to GCS, and a GenerateResponse JSON is returned",
+      "evidence_refs": [0, 3]
+    },
+    {
+      "name": "contract introspection",
+      "given": "A client that wants to know what parameters POST /generate accepts",
+      "when": "GET /generate is called",
+      "then": "A GenerateInfoResponse JSON is returned describing supported parameters",
+      "evidence_refs": [1]
+    },
+    {
+      "name": "unauthenticated local dev",
+      "given": "SERVICE_AUTH_TOKEN env var is unset",
+      "when": "POST /generate is called without any auth header",
+      "then": "The request is accepted and processed normally",
+      "evidence_refs": [2]
+    }
+  ],
+  "dependencies": [
+    "infra.gcs-upload",
+    "svg.scene-to-svg",
+    "image.ai-image-generation"
+  ],
+  "rebuild_decisions": [
+    {
+      "name": "LLM provider routing",
+      "options": [
+        "Route all calls through litellm for provider abstraction",
+        "Call Gemini and Claude SDKs directly without an abstraction layer"
+      ],
+      "constraints_from_source": "litellm is used as the provider abstraction layer",
+      "evidence_refs": [3]
+    },
+    {
+      "name": "Pipeline parallelism",
+      "options": [
+        "Use asyncio.gather for parallel LLM sub-calls within a single request",
+        "Process each LLM call sequentially"
+      ],
+      "constraints_from_source": "asyncio.gather is used in the generation pipeline",
+      "evidence_refs": [0]
+    }
+  ],
+  "confidence": "high"
+}

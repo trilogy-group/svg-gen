@@ -1,0 +1,83 @@
+{
+  "needs_aria": [
+    {
+      "surface_id": "browse-bucket",
+      "capability_id": "asset-browser.gcs-browser",
+      "surface_label": "GET /browse — GCS bucket browser HTML page",
+      "kind": "page",
+      "aria_concerns": [
+        "Directory listing table lacks column headers with scope attributes",
+        "Navigation breadcrumbs not wrapped in <nav aria-label>",
+        "Icon-only links (if any) need aria-label",
+        "File/folder type distinction communicated visually only"
+      ],
+      "priority": "medium"
+    },
+    {
+      "surface_id": "image-viewer",
+      "capability_id": "asset-browser.gcs-browser",
+      "surface_label": "GET /image/{key} — image asset HTML viewer page",
+      "kind": "page",
+      "aria_concerns": [
+        "Displayed image needs descriptive alt text (not just the filename)",
+        "Back/navigation link needs clear accessible label",
+        "SVG images embedded inline should carry <title> and <desc> elements"
+      ],
+      "priority": "high"
+    },
+    {
+      "surface_id": "view-markdown",
+      "capability_id": "asset-browser.gcs-browser",
+      "surface_label": "GET /view/{key} — Markdown article HTML viewer page",
+      "kind": "page",
+      "aria_concerns": [
+        "Breadcrumb navigation should use <nav aria-label='Breadcrumb'> and aria-current='page' on the last item",
+        "Rendered Markdown heading hierarchy should be validated (no skipped levels)",
+        "Code blocks should be marked with role='region' or appropriate landmark if long"
+      ],
+      "priority": "medium"
+    },
+    {
+      "surface_id": "question-viewer-page",
+      "capability_id": "devtools.question-viewer",
+      "surface_label": "GET / — question viewer HTML root page",
+      "kind": "page",
+      "aria_concerns": [
+        "Math question content rendered as SVG needs accessible description for screen readers",
+        "Answer choice list should use <ol> or <ul> with role='radiogroup' if interactive",
+        "Any LaTeX/MathML rendered inline should carry aria-label or be wrapped in a <span> with descriptive text"
+      ],
+      "priority": "high"
+    },
+    {
+      "surface_id": "question-bank-fetcher-index-page",
+      "capability_id": "question-bank.fetch-and-serve",
+      "surface_label": "GET / — question bank fetcher HTML index page",
+      "kind": "page",
+      "aria_concerns": [
+        "Topic group headings should use semantic heading elements (h2/h3) not styled divs",
+        "Links to topic pages need descriptive text beyond just the slug"
+      ],
+      "priority": "low"
+    },
+    {
+      "surface_id": "question-bank-fetcher-topic-page",
+      "capability_id": "question-bank.fetch-and-serve",
+      "surface_label": "GET /topic/{slug} — question bank fetcher topic HTML detail page",
+      "kind": "page",
+      "aria_concerns": [
+        "Question items in the list need semantic list markup",
+        "Mathematical expressions rendered as images need alt text",
+        "PDF download link should indicate file type and size in accessible label"
+      ],
+      "priority": "medium"
+    }
+  ],
+  "summary": {
+    "total_html_surfaces": 6,
+    "surfaces_with_aria_concerns": 6,
+    "high_priority": 2,
+    "medium_priority": 3,
+    "low_priority": 1
+  }
+}

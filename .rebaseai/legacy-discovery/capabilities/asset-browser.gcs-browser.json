@@ -1,0 +1,112 @@
+{
+  "id": "asset-browser.gcs-browser",
+  "domain": "asset-browser",
+  "summary": "GCS-backed asset browser: renders Jinja2 HTML pages to navigate bucket directories at a given prefix, proxies raw object bytes for download, displays image assets (PNG/SVG) in a dedicated HTML viewer, renders Markdown articles fetched from GCS, and provides a bulk sync CLI to upload the local curricula/SAT/ directory to the bucket.",
+  "surface_ids": [
+    "browse-bucket",
+    "object-proxy",
+    "image-viewer",
+    "view-markdown",
+    "cli-sync-sat-to-gcs"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/browse.py:77",
+      "claim": "GET /browse renders an HTMLResponse via Jinja2 listing GCS bucket objects at a given prefix"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/object.py:33",
+      "claim": "GET /object/{key} streams raw GCS object bytes as a proxy download with content-type headers"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/image.py:25",
+      "claim": "GET /image/{key} renders an HTML page displaying a GCS-stored image asset with navigation breadcrumbs"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/view.py:28",
+      "claim": "GET /view/{key} renders an HTML page displaying a Markdown article fetched from GCS"
+    },
+    {
+      "source": "tool",
+      "ref": "scripts/sync_sat_to_gcs.py:45",
+      "claim": "sync_sat_to_gcs.py walks curricula/SAT/ and uploads all files to GCS, supports --dry-run flag"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/routes/browse.py:88",
+      "claim": "browse endpoint calls reader.list_prefix(prefix) on a GcsReader dependency to enumerate bucket contents"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "All five surfaces share a single GCS read/listing concern via the GcsReader dependency",
+      "evidence_refs": [0, 1, 5]
+    },
+    {
+      "statement": "The sync script uploads to the same GCS bucket that the browse/object/image/view surfaces read from",
+      "evidence_refs": [4]
+    },
+    {
+      "statement": "HTML rendering uses Jinja2 templates injected via FastAPI dependency",
+      "evidence_refs": [0]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "browse bucket root",
+      "given": "A GCS bucket containing generated question assets",
+      "when": "GET /browse is requested with no prefix",
+      "then": "An HTML page listing the top-level bucket objects and subdirectories is returned",
+      "evidence_refs": [0, 5]
+    },
+    {
+      "name": "download raw asset",
+      "given": "A known GCS object key from the browse listing",
+      "when": "GET /object/{key} is requested",
+      "then": "The raw object bytes are streamed back with correct content-type headers",
+      "evidence_refs": [1]
+    },
+    {
+      "name": "view image asset",
+      "given": "A GCS key pointing to a PNG or SVG file",
+      "when": "GET /image/{key} is requested",
+      "then": "An HTML page embedding the image with a back-navigation link is returned",
+      "evidence_refs": [2]
+    },
+    {
+      "name": "bulk upload curricula",
+      "given": "A populated local curricula/SAT/ directory",
+      "when": "python scripts/sync_sat_to_gcs.py is run",
+      "then": "All files are uploaded to the GCS bucket and become visible via /browse",
+      "evidence_refs": [4]
+    }
+  ],
+  "dependencies": [
+    "infra.gcs-upload"
+  ],
+  "rebuild_decisions": [
+    {
+      "name": "Browser HTML rendering approach",
+      "options": [
+        "Server-side Jinja2 templates rendered by FastAPI",
+        "Client-side SPA fetching JSON from an API"
+      ],
+      "constraints_from_source": "Jinja2Templates used as FastAPI dependency in browse endpoint",
+      "evidence_refs": [0]
+    },
+    {
+      "name": "Bulk sync mechanism",
+      "options": [
+        "Standalone Python script using GcsUploader component",
+        "Dedicated API endpoint for triggering bulk sync"
+      ],
+      "constraints_from_source": "sync_sat_to_gcs.py is a standalone CLI script",
+      "evidence_refs": [4]
+    }
+  ],
+  "confidence": "high"
+}

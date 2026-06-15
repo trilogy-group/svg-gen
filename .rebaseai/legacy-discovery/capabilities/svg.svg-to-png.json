@@ -1,0 +1,105 @@
+{
+  "id": "svg.svg-to-png",
+  "domain": "svg",
+  "summary": "SVG rasterization to PNG using a headless Playwright/Chromium renderer: accepts SVG content via HTTP POST (raw body or JSON) or CLI and returns PNG bytes. Supports optional output width and background color via request headers. Runs as a standalone microservice on port 8002. Also provides batch directory conversion and single-file CLI conversion commands.",
+  "surface_ids": [
+    "svg-to-image-post-convert",
+    "svg-to-image-get-health",
+    "cli-svg-to-image-convert",
+    "cli-svg-to-image-convert-batch",
+    "cli-svg-to-image-serve"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/web/app.py:147",
+      "claim": "POST /convert accepts SVG content (raw body or JSON) and returns PNG bytes via Playwright/Chromium rendering"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/web/app.py:148",
+      "claim": "POST /convert supports X-Output-Width and X-Background request headers for rendering customization"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/web/app.py:76",
+      "claim": "GET /health returns a HealthResponse JSON for liveness probing of the svg-to-image microservice"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/cli.py:104",
+      "claim": "svg-to-image convert CLI converts a single SVG file or stdin to a PNG file using Playwright/Chromium"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/cli.py:187",
+      "claim": "svg-to-image convert-batch CLI converts all SVG files in a directory to PNGs, writing alongside or to a specified root"
+    },
+    {
+      "source": "tool",
+      "ref": "components/svg-to-image/src/svg_to_image/cli.py:223",
+      "claim": "svg-to-image serve CLI starts the FastAPI server on port 8002 (default) for POST /convert requests"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "All rendering is performed by a headless Playwright/Chromium instance, not a server-side SVG library",
+      "evidence_refs": [0, 3]
+    },
+    {
+      "statement": "The microservice runs on port 8002 by default",
+      "evidence_refs": [5]
+    },
+    {
+      "statement": "POST /convert returns image/png bytes directly, not a JSON wrapper",
+      "evidence_refs": [0]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "convert SVG via HTTP",
+      "given": "SVG content as request body with optional X-Output-Width header",
+      "when": "POST /convert is called on port 8002",
+      "then": "PNG bytes are returned with image/png content-type",
+      "evidence_refs": [0, 1]
+    },
+    {
+      "name": "batch convert directory",
+      "given": "A directory containing multiple SVG files",
+      "when": "svg-to-image convert-batch is invoked with the input directory",
+      "then": "Each SVG is rendered to a PNG written alongside it or to a specified root directory",
+      "evidence_refs": [4]
+    },
+    {
+      "name": "single file CLI conversion",
+      "given": "A single SVG file or stdin stream",
+      "when": "svg-to-image convert is invoked",
+      "then": "A PNG file is written to the specified output path",
+      "evidence_refs": [3]
+    }
+  ],
+  "dependencies": [
+    "svg.scene-to-svg"
+  ],
+  "rebuild_decisions": [
+    {
+      "name": "Rasterization engine",
+      "options": [
+        "Headless Playwright/Chromium for browser-accurate rendering",
+        "Server-side SVG library such as cairosvg or librsvg"
+      ],
+      "constraints_from_source": "Playwright/Chromium is the rendering engine",
+      "evidence_refs": [0, 3]
+    },
+    {
+      "name": "Service port",
+      "options": [
+        "Port 8002 (current default)",
+        "Configurable via environment variable"
+      ],
+      "constraints_from_source": "Default port is 8002",
+      "evidence_refs": [5]
+    }
+  ],
+  "confidence": "high"
+}

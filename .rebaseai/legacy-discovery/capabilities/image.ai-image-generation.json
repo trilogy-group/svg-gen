@@ -1,0 +1,90 @@
+{
+  "id": "image.ai-image-generation",
+  "domain": "image",
+  "summary": "AI photorealistic image generation from text prompts via the OpenAI image generation API: accepts a prompt and optional count parameter, returns PNG bytes. Available as an HTTP microservice on port 8003 or as a CLI command. Used in the main generation pipeline for producing photorealistic math context images to accompany SAT questions.",
+  "surface_ids": [
+    "image-gen-post-generate",
+    "image-gen-get-health",
+    "cli-image-gen-generate",
+    "cli-image-gen-serve"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/image-gen/src/image_gen/web/app.py:99",
+      "claim": "POST /generate accepts a GenerateJsonRequest with prompt and n parameters and returns PNG bytes via OpenAI"
+    },
+    {
+      "source": "tool",
+      "ref": "components/image-gen/src/image_gen/web/app.py:70",
+      "claim": "GET /health returns a HealthResponse JSON for liveness probing of the image-gen microservice"
+    },
+    {
+      "source": "tool",
+      "ref": "components/image-gen/src/image_gen/cli.py:59",
+      "claim": "image-gen generate CLI generates a PNG from a text prompt via OpenAI and writes to a file or stdout"
+    },
+    {
+      "source": "tool",
+      "ref": "components/image-gen/src/image_gen/cli.py:88",
+      "claim": "image-gen serve CLI starts the FastAPI web server on port 8003 for POST /generate image requests"
+    },
+    {
+      "source": "llm-supplement",
+      "ref": "capability-sketch.json:image.ai-image-generation.suspected.integrations",
+      "claim": "The image-gen component uses the OpenAI image generation API as its sole AI provider"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "Image generation uses the OpenAI API exclusively, not a self-hosted model",
+      "evidence_refs": [0, 4]
+    },
+    {
+      "statement": "The microservice runs on port 8003 by default",
+      "evidence_refs": [3]
+    },
+    {
+      "statement": "POST /generate returns image/png bytes directly, not a JSON wrapper",
+      "evidence_refs": [0]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "generate image via HTTP",
+      "given": "A JSON body with a prompt string and optional n count",
+      "when": "POST /generate is called on port 8003",
+      "then": "PNG bytes are returned with image/png content-type",
+      "evidence_refs": [0, 4]
+    },
+    {
+      "name": "generate image via CLI",
+      "given": "A text prompt passed as a CLI argument",
+      "when": "image-gen generate is invoked",
+      "then": "A PNG file is written to the specified output path or stdout",
+      "evidence_refs": [2]
+    }
+  ],
+  "dependencies": [],
+  "rebuild_decisions": [
+    {
+      "name": "Image generation provider",
+      "options": [
+        "OpenAI image generation API (current)",
+        "Google Imagen or Stable Diffusion for provider independence"
+      ],
+      "constraints_from_source": "OpenAI is the only configured integration",
+      "evidence_refs": [0, 4]
+    },
+    {
+      "name": "Service port",
+      "options": [
+        "Port 8003 (current default)",
+        "Configurable via environment variable"
+      ],
+      "constraints_from_source": "Default port is 8003",
+      "evidence_refs": [3]
+    }
+  ],
+  "confidence": "high"
+}

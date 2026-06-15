@@ -1,0 +1,62 @@
+{
+  "id": "devtools.question-viewer",
+  "domain": "devtools",
+  "summary": "Local developer tool for visually inspecting rendered SAT math questions as HTML: serves a FastAPI web page on port 7890 that displays question content with SVG and HTML assets rendered server-side, allowing engineers to visually verify generated question output during development without deploying to a remote environment.",
+  "surface_ids": [
+    "question-viewer-page",
+    "cli-question-viewer-serve"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "components/question-viewer/src/question_viewer/app.py:685",
+      "claim": "GET / renders an HTMLResponse for viewing SAT math questions with SVG/HTML assets server-side"
+    },
+    {
+      "source": "tool",
+      "ref": "components/question-viewer/src/question_viewer/cli.py:28",
+      "claim": "question-viewer serve CLI starts a local FastAPI server on port 7890 for viewing rendered questions"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "The question-viewer is a local-only development tool, not part of the production deployment",
+      "evidence_refs": [1]
+    },
+    {
+      "statement": "The server runs on port 7890 by default",
+      "evidence_refs": [1]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "inspect generated question",
+      "given": "A locally running question-viewer server and a generated question JSON",
+      "when": "GET / is opened in a browser",
+      "then": "The question is rendered as an HTML page with all SVG and HTML assets displayed",
+      "evidence_refs": [0]
+    },
+    {
+      "name": "start viewer server",
+      "given": "A development environment with question-viewer installed",
+      "when": "question-viewer serve is invoked",
+      "then": "A FastAPI server starts on port 7890 ready to serve question HTML pages",
+      "evidence_refs": [1]
+    }
+  ],
+  "dependencies": [
+    "generation.question-generation"
+  ],
+  "rebuild_decisions": [
+    {
+      "name": "Viewer implementation approach",
+      "options": [
+        "Standalone FastAPI app with server-side rendering (current)",
+        "Extend the main API browser with a question-preview route"
+      ],
+      "constraints_from_source": "question-viewer is a separate component on its own port",
+      "evidence_refs": [1]
+    }
+  ],
+  "confidence": "high"
+}

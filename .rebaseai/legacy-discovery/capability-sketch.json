@@ -1,0 +1,397 @@
+{
+  "capabilities": [
+    {
+      "id": "generation.question-generation",
+      "domain": "generation",
+      "summary": "Core SAT math question generation capability: accepts an InceptBench-compatible request, runs the LLM generation pipeline via asyncio.gather, stores produced assets in GCS, and returns the question JSON. Also exposes a GET introspection endpoint listing supported parameters.",
+      "surface_ids": [
+        "api-post-generate",
+        "api-get-generate-info"
+      ],
+      "suspected": {
+        "routes": [
+          "POST /generate",
+          "GET /generate"
+        ],
+        "endpoints": [
+          "src/edullm_sat/api/routes/generate.py"
+        ],
+        "rpcs_or_functions": [
+          "generation.pipeline (asyncio.gather parallel LLM calls)",
+          "verify_auth (FastAPI dependency)"
+        ],
+        "integrations": [
+          "Google Gemini via litellm",
+          "Anthropic Claude via litellm",
+          "Langfuse tracing",
+          "Google Cloud Storage (asset write)",
+          "InceptBench API"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "src/edullm_sat/api/routes/generate.py:79",
+          "claim": "POST /generate triggers the generation pipeline with asyncio.gather and writes results to GCS"
+        },
+        {
+          "ref": "src/edullm_sat/api/routes/generate.py:62",
+          "claim": "GET /generate returns a contract summary describing supported POST parameters"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 2,
+        "endpoint_count": 2,
+        "table_count": 0,
+        "should_split": false
+      }
+    },
+    {
+      "id": "asset-browser.gcs-browser",
+      "domain": "asset-browser",
+      "summary": "GCS-backed asset browser: renders HTML pages to navigate bucket directories, proxies raw object bytes for download, displays image assets, renders Markdown articles from GCS, and provides a bulk sync CLI to upload the local curricula directory.",
+      "surface_ids": [
+        "browse-bucket",
+        "object-proxy",
+        "image-viewer",
+        "view-markdown",
+        "cli-sync-sat-to-gcs"
+      ],
+      "suspected": {
+        "routes": [
+          "GET /browse",
+          "GET /browse/{prefix}",
+          "GET /object/{key}",
+          "GET /image/{key}",
+          "GET /view/{key}"
+        ],
+        "endpoints": [
+          "src/edullm_sat/api/routes/browse.py",
+          "src/edullm_sat/api/routes/object.py",
+          "src/edullm_sat/api/routes/image.py",
+          "src/edullm_sat/api/routes/view.py"
+        ],
+        "integrations": [
+          "Google Cloud Storage (object read, directory listing)"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "src/edullm_sat/api/routes/browse.py:77",
+          "claim": "GET /browse renders an HTML Jinja2 page listing GCS bucket objects at a given prefix"
+        },
+        {
+          "ref": "src/edullm_sat/api/routes/object.py:33",
+          "claim": "GET /object/{key} streams raw GCS object bytes as a proxy download"
+        },
+        {
+          "ref": "scripts/sync_sat_to_gcs.py:45",
+          "claim": "sync_sat_to_gcs.py walks curricula/SAT/ and uploads all files to GCS bucket"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 5,
+        "endpoint_count": 5,
+        "table_count": 0,
+        "should_split": false,
+        "split_justification": "All five surfaces share a single GCS read/listing concern and the Jinja2 template layer; splitting would fragment a coherent browsing capability."
+      }
+    },
+    {
+      "id": "svg.scene-to-svg",
+      "domain": "svg",
+      "summary": "SVG diagram generation from scene descriptions or question data: accepts a scene JSON body via HTTP POST or CLI and returns an SVG via an LLM-backed pipeline. Includes a microservice mode (port 8001) and a question-oriented image generation endpoint.",
+      "surface_ids": [
+        "svg-gen-post-render",
+        "svg-gen-post-image-from-question",
+        "cli-svg-gen-render",
+        "cli-svg-gen-serve",
+        "svg-gen-get-health"
+      ],
+      "suspected": {
+        "routes": [
+          "POST /render",
+          "POST /image/fromQuestion",
+          "GET /health"
+        ],
+        "endpoints": [
+          "components/svg-gen/src/svg_gen/web/app.py",
+          "components/svg-gen/src/svg_gen/cli.py"
+        ],
+        "integrations": [
+          "LLM provider (scene description rendering pipeline)"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/svg-gen/src/svg_gen/web/app.py:212",
+          "claim": "POST /render accepts a scene JSON body and returns a rendered SVG diagram"
+        },
+        {
+          "ref": "components/svg-gen/src/svg_gen/web/app.py:547",
+          "claim": "POST /image/fromQuestion generates an SVG asset from a SAT math question object"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 5,
+        "endpoint_count": 3,
+        "table_count": 0,
+        "should_split": false,
+        "split_justification": "All surfaces belong to the single svg-gen component with a shared rendering pipeline; the health endpoint and CLI serve entrypoints are ancillary to the same capability."
+      }
+    },
+    {
+      "id": "svg.svg-to-png",
+      "domain": "svg",
+      "summary": "SVG rasterization to PNG using a headless Playwright/Chromium renderer: accepts SVG content via HTTP POST or CLI and returns PNG bytes. Runs as a standalone microservice on port 8002. Also supports batch directory conversion and single-file conversion via CLI commands.",
+      "surface_ids": [
+        "svg-to-image-post-convert",
+        "svg-to-image-get-health",
+        "cli-svg-to-image-convert",
+        "cli-svg-to-image-convert-batch",
+        "cli-svg-to-image-serve"
+      ],
+      "suspected": {
+        "routes": [
+          "POST /convert",
+          "GET /health"
+        ],
+        "endpoints": [
+          "components/svg-to-image/src/svg_to_image/web/app.py",
+          "components/svg-to-image/src/svg_to_image/cli.py"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/svg-to-image/src/svg_to_image/web/app.py:147",
+          "claim": "POST /convert accepts SVG content and returns PNG bytes via Playwright/Chromium rendering"
+        },
+        {
+          "ref": "components/svg-to-image/src/svg_to_image/cli.py:187",
+          "claim": "convert-batch CLI command converts all SVGs in a directory to PNGs"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 5,
+        "endpoint_count": 2,
+        "table_count": 0,
+        "should_split": false,
+        "split_justification": "All surfaces are part of the svg-to-image component with a single Playwright rendering concern; batch and serve modes are operational variants of the same rasterization capability."
+      }
+    },
+    {
+      "id": "image.ai-image-generation",
+      "domain": "image",
+      "summary": "AI image generation from text prompts via the OpenAI API: accepts a prompt and returns a PNG. Available as an HTTP microservice (port 8003) or CLI. Used for producing photorealistic math context images in the generation pipeline.",
+      "surface_ids": [
+        "image-gen-post-generate",
+        "image-gen-get-health",
+        "cli-image-gen-generate",
+        "cli-image-gen-serve"
+      ],
+      "suspected": {
+        "routes": [
+          "POST /generate",
+          "GET /health"
+        ],
+        "endpoints": [
+          "components/image-gen/src/image_gen/web/app.py",
+          "components/image-gen/src/image_gen/cli.py"
+        ],
+        "integrations": [
+          "OpenAI image generation API"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/image-gen/src/image_gen/web/app.py:99",
+          "claim": "POST /generate accepts a prompt JSON body and returns PNG bytes via OpenAI"
+        },
+        {
+          "ref": "components/image-gen/src/image_gen/cli.py:59",
+          "claim": "image-gen generate CLI writes a PNG from a text prompt via OpenAI"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 4,
+        "endpoint_count": 2,
+        "table_count": 0,
+        "should_split": false
+      }
+    },
+    {
+      "id": "question-bank.fetch-and-serve",
+      "domain": "question-bank",
+      "summary": "SAT question bank acquisition and local serving: downloads topic bundles from InceptCurriculum API to local JSON, then serves them via a FastAPI server with topic listing, topic detail, PDF view, and PDF download endpoints for browser and programmatic access.",
+      "surface_ids": [
+        "cli-question-bank-fetcher-download",
+        "cli-question-bank-fetcher-serve",
+        "question-bank-fetcher-serve",
+        "question-bank-fetcher-topic-detail",
+        "question-bank-fetcher-index-page",
+        "question-bank-fetcher-topic-page",
+        "question-bank-fetcher-pdf-view",
+        "question-bank-fetcher-pdf-download"
+      ],
+      "suspected": {
+        "routes": [
+          "GET /api/topics",
+          "GET /api/topic/{slug}",
+          "GET /",
+          "GET /topic/{slug}",
+          "GET /pdf/{slug}",
+          "GET /pdf/{slug}/download"
+        ],
+        "endpoints": [
+          "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py",
+          "components/question-bank-fetcher/src/question_bank_fetcher/cli.py"
+        ],
+        "integrations": [
+          "InceptCurriculum API (api.curriculum.inceptapi.com)"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/question-bank-fetcher/src/question_bank_fetcher/cli.py:84",
+          "claim": "download CLI fetches SAT question bundles from InceptCurriculum API and saves as local JSON"
+        },
+        {
+          "ref": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:148",
+          "claim": "GET /api/topics returns JSON list of all available SAT topic bundles by assessment type"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 8,
+        "endpoint_count": 6,
+        "table_count": 0,
+        "should_split": false,
+        "split_justification": "Although there are 8 surfaces, they form a single coherent dev-time capability: download then browse. The download CLI feeds the serve command; splitting fetch from serve would create a meaningless half-capability."
+      }
+    },
+    {
+      "id": "devtools.question-viewer",
+      "domain": "devtools",
+      "summary": "Local developer tool for viewing rendered SAT math questions as HTML: serves a FastAPI web page on port 7890 that displays question content with SVG and HTML assets rendered server-side, allowing engineers to visually inspect generated question output during development.",
+      "surface_ids": [
+        "question-viewer-page",
+        "cli-question-viewer-serve"
+      ],
+      "suspected": {
+        "routes": [
+          "GET /"
+        ],
+        "endpoints": [
+          "components/question-viewer/src/question_viewer/app.py",
+          "components/question-viewer/src/question_viewer/cli.py"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/question-viewer/src/question_viewer/app.py:685",
+          "claim": "GET / renders an HTML page for viewing SAT math questions with SVG/HTML assets server-side"
+        },
+        {
+          "ref": "components/question-viewer/src/question_viewer/cli.py:28",
+          "claim": "question-viewer serve CLI starts local FastAPI server on port 7890"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 2,
+        "endpoint_count": 1,
+        "table_count": 0,
+        "should_split": false
+      }
+    },
+    {
+      "id": "infra.service-health",
+      "domain": "infra",
+      "summary": "Health check and root info endpoints across all deployed services: the main API exposes GET /health and GET / for liveness probing and service identification. These surfaces are used by Cloud Run and load balancers to verify the service is running before routing traffic.",
+      "surface_ids": [
+        "api-get-health",
+        "api-get-root"
+      ],
+      "suspected": {
+        "routes": [
+          "GET /health",
+          "GET /"
+        ],
+        "endpoints": [
+          "src/edullm_sat/api/app.py"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "src/edullm_sat/api/app.py:49",
+          "claim": "GET /health returns JSON health status for Cloud Run liveness probing"
+        },
+        {
+          "ref": "src/edullm_sat/api/app.py:44",
+          "claim": "GET / returns a root JSON welcome/info response from the main FastAPI application"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 2,
+        "endpoint_count": 2,
+        "table_count": 0,
+        "should_split": false
+      }
+    },
+    {
+      "id": "infra.gcs-upload",
+      "domain": "infra",
+      "summary": "CLI utility for uploading individual files to a Google Cloud Storage bucket with optional content-type override. Provides the gcs-uploader component as a reusable building block consumed by both the main generation pipeline and the bulk sync script.",
+      "surface_ids": [
+        "cli-gcs-uploader-upload"
+      ],
+      "suspected": {
+        "rpcs_or_functions": [
+          "GcsUploader.upload"
+        ],
+        "integrations": [
+          "Google Cloud Storage SDK"
+        ]
+      },
+      "preliminary_evidence": [
+        {
+          "ref": "components/gcs-uploader/src/gcs_uploader/cli.py:41",
+          "claim": "gcs-uploader upload CLI uploads a local file to a GCS bucket path with optional content-type"
+        }
+      ],
+      "splitting_check": {
+        "surface_count": 1,
+        "endpoint_count": 0,
+        "table_count": 0,
+        "should_split": false
+      }
+    }
+  ],
+  "proposed_domains": [
+    {
+      "name": "generation",
+      "justification": "Encapsulates the core business logic of generating SAT math questions via the LLM pipeline, tying together question prompting, asset production, and GCS persistence."
+    },
+    {
+      "name": "asset-browser",
+      "justification": "Groups the GCS-backed file browsing and viewing surfaces that allow engineers and evaluators to inspect generated question assets stored in the bucket."
+    },
+    {
+      "name": "svg",
+      "justification": "Contains both the scene-to-SVG generation capability and the SVG-to-PNG rasterization capability — two distinct but tightly related steps in the math diagram production pipeline."
+    },
+    {
+      "name": "image",
+      "justification": "Covers AI-driven photorealistic image generation from text prompts via OpenAI, a separate concern from the vector SVG diagram pipeline."
+    },
+    {
+      "name": "question-bank",
+      "justification": "Groups the InceptCurriculum question acquisition and local serving surfaces used to supply training and evaluation data for question generation."
+    },
+    {
+      "name": "devtools",
+      "justification": "Captures local developer utilities (question viewer) that aid inspection and debugging of generated output but are not part of the production API surface."
+    },
+    {
+      "name": "infra",
+      "justification": "Holds cross-cutting operational surfaces — health checks, root info endpoints, and GCS upload tooling — that support deployment and CI/CD without belonging to a business-logic domain."
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "id": "infra.service-health",
+  "domain": "infra",
+  "summary": "Health check and root info endpoints on the main FastAPI application: GET /health returns a JSON liveness response used by Cloud Run and load balancers to verify the service is running before routing traffic, and GET / returns a root welcome/info JSON response for service identification. Both endpoints require no authentication.",
+  "surface_ids": [
+    "api-get-health",
+    "api-get-root"
+  ],
+  "evidence": [
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/app.py:49",
+      "claim": "GET /health returns a HealthResponse JSON for Cloud Run liveness probing"
+    },
+    {
+      "source": "tool",
+      "ref": "src/edullm_sat/api/app.py:44",
+      "claim": "GET / returns a RedirectResponse or root welcome JSON from the main FastAPI application"
+    },
+    {
+      "source": "llm-supplement",
+      "ref": "capability-sketch.json:infra.service-health.suspected.endpoints",
+      "claim": "Both endpoints are defined in src/edullm_sat/api/app.py as top-level app routes"
+    }
+  ],
+  "invariants": [
+    {
+      "statement": "Both endpoints require no authentication and are always publicly accessible",
+      "evidence_refs": [0, 1]
+    },
+    {
+      "statement": "GET /health is used by Cloud Run for liveness probing before traffic is routed",
+      "evidence_refs": [0]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "Cloud Run liveness probe",
+      "given": "A deployed Cloud Run instance of the main API",
+      "when": "Cloud Run sends GET /health",
+      "then": "A JSON health status response is returned indicating the service is alive",
+      "evidence_refs": [0]
+    },
+    {
+      "name": "service identification",
+      "given": "Any caller wanting to confirm they hit the right service",
+      "when": "GET / is requested",
+      "then": "A root JSON welcome/info response is returned identifying the service",
+      "evidence_refs": [1]
+    }
+  ],
+  "dependencies": [],
+  "rebuild_decisions": [
+    {
+      "name": "Health check response format",
+      "options": [
+        "Structured HealthResponse JSON model (current)",
+        "Plain 200 OK with empty body"
+      ],
+      "constraints_from_source": "HealthResponse model is returned",
+      "evidence_refs": [0]
+    }
+  ],
+  "confidence": "high"
+}

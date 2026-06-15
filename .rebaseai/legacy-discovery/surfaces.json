@@ -1,0 +1,361 @@
+{
+  "surfaces": [
+    {
+      "id": "api-post-generate",
+      "kind": "public-api",
+      "label": "POST /generate — SAT question generation endpoint",
+      "evidence_locator": "src/edullm_sat/api/routes/generate.py:79",
+      "trigger": "HTTP POST request with InceptBench-compatible JSON body and optional Bearer token or X-API-Key header",
+      "observed_outcome": "Runs the generation pipeline via asyncio.gather, produces a SAT math question with assets, stores results in GCS, and returns the generated question JSON",
+      "user_role_required": null,
+      "depends_on_surfaces": [],
+      "notes": "Auth is optional: if SERVICE_AUTH_TOKEN env var is unset the endpoint is open (local dev mode)"
+    },
+    {
+      "id": "api-get-generate-info",
+      "kind": "public-api",
+      "label": "GET /generate — endpoint contract summary",
+      "evidence_locator": "src/edullm_sat/api/routes/generate.py:62",
+      "trigger": "HTTP GET request to /generate",
+      "observed_outcome": "Returns a JSON summary describing the POST /generate contract including supported parameters, for callers to inspect before running batch requests",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "api-get-health",
+      "kind": "public-api",
+      "label": "GET /health — main API health check",
+      "evidence_locator": "src/edullm_sat/api/app.py:49",
+      "trigger": "HTTP GET request to /health",
+      "observed_outcome": "Returns a JSON health status response indicating the service is running",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "api-get-root",
+      "kind": "public-api",
+      "label": "GET / — main API root welcome response",
+      "evidence_locator": "src/edullm_sat/api/app.py:44",
+      "trigger": "HTTP GET request to /",
+      "observed_outcome": "Returns a root JSON welcome/info response from the main FastAPI application",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "browse-bucket",
+      "kind": "page",
+      "label": "GET /browse — GCS bucket browser HTML page",
+      "evidence_locator": "src/edullm_sat/api/routes/browse.py:77",
+      "trigger": "HTTP GET request to /browse or /browse/{prefix:path}",
+      "observed_outcome": "Renders an HTML page via Jinja2 templates listing GCS bucket objects and directories at the given prefix, allowing navigation of stored question assets",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "object-proxy",
+      "kind": "public-api",
+      "label": "GET /object/{key} — GCS object proxy download",
+      "evidence_locator": "src/edullm_sat/api/routes/object.py:33",
+      "trigger": "HTTP GET request to /object/{key:path}",
+      "observed_outcome": "Streams the raw GCS object bytes back to the caller with appropriate content-type headers, acting as a proxy for stored assets",
+      "user_role_required": null,
+      "depends_on_surfaces": ["browse-bucket"]
+    },
+    {
+      "id": "image-viewer",
+      "kind": "page",
+      "label": "GET /image/{key} — image asset HTML viewer page",
+      "evidence_locator": "src/edullm_sat/api/routes/image.py:25",
+      "trigger": "HTTP GET request to /image/{key:path}",
+      "observed_outcome": "Renders an HTML page displaying a GCS-stored image asset (PNG/SVG) with navigation back to the parent browse directory",
+      "user_role_required": null,
+      "depends_on_surfaces": ["browse-bucket"]
+    },
+    {
+      "id": "view-markdown",
+      "kind": "page",
+      "label": "GET /view/{key} — Markdown article HTML viewer page",
+      "evidence_locator": "src/edullm_sat/api/routes/view.py:28",
+      "trigger": "HTTP GET request to /view/{key:path}",
+      "observed_outcome": "Renders an HTML page displaying a Markdown article fetched from GCS, with parent directory navigation breadcrumbs",
+      "user_role_required": null,
+      "depends_on_surfaces": ["browse-bucket"]
+    },
+    {
+      "id": "svg-to-image-post-convert",
+      "kind": "public-api",
+      "label": "POST /convert — SVG to PNG conversion microservice endpoint",
+      "evidence_locator": "components/svg-to-image/src/svg_to_image/web/app.py:147",
+      "trigger": "HTTP POST request with SVG content (raw body or JSON) to the svg-to-image microservice on port 8002",
+      "observed_outcome": "Renders the SVG to a PNG image using Playwright/Chromium and returns the PNG bytes",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "svg-to-image-get-health",
+      "kind": "public-api",
+      "label": "GET /health — svg-to-image microservice health check",
+      "evidence_locator": "components/svg-to-image/src/svg_to_image/web/app.py:76",
+      "trigger": "HTTP GET request to /health on the svg-to-image microservice",
+      "observed_outcome": "Returns JSON health status indicating the svg-to-image service is alive",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-svg-to-image-convert",
+      "kind": "cli-command",
+      "label": "svg-to-image convert — single SVG file to PNG conversion CLI",
+      "evidence_locator": "components/svg-to-image/src/svg_to_image/cli.py:104",
+      "trigger": "Running `svg-to-image convert <INPUT> <OUTPUT>` on the command line",
+      "observed_outcome": "Converts a single SVG file (or stdin) to a PNG file using Playwright/Chromium headless rendering",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-svg-to-image-convert-batch",
+      "kind": "cli-command",
+      "label": "svg-to-image convert-batch — batch SVG directory to PNG conversion CLI",
+      "evidence_locator": "components/svg-to-image/src/svg_to_image/cli.py:187",
+      "trigger": "Running `svg-to-image convert-batch <INPUT_DIR>` on the command line",
+      "observed_outcome": "Converts all SVG files in a directory to PNG files, writing output alongside or to a specified root directory",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-svg-to-image-serve",
+      "kind": "cli-command",
+      "label": "svg-to-image serve — start svg-to-image HTTP microservice",
+      "evidence_locator": "components/svg-to-image/src/svg_to_image/cli.py:223",
+      "trigger": "Running `svg-to-image serve` on the command line",
+      "observed_outcome": "Starts the svg-to-image FastAPI web server on the configured host/port (default 8002) for handling POST /convert requests",
+      "user_role_required": null,
+      "depends_on_surfaces": ["svg-to-image-post-convert"]
+    },
+    {
+      "id": "svg-gen-post-render",
+      "kind": "public-api",
+      "label": "POST /render — SVG generation from scene description microservice endpoint",
+      "evidence_locator": "components/svg-gen/src/svg_gen/web/app.py:212",
+      "trigger": "HTTP POST request with a scene JSON body to the svg-gen microservice on port 8001",
+      "observed_outcome": "Renders an SVG diagram from a structured scene description using the svg-gen generation pipeline",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "svg-gen-post-image-from-question",
+      "kind": "public-api",
+      "label": "POST /image/fromQuestion — generate SVG image from question data",
+      "evidence_locator": "components/svg-gen/src/svg_gen/web/app.py:547",
+      "trigger": "HTTP POST request with question data JSON to /image/fromQuestion on the svg-gen microservice",
+      "observed_outcome": "Generates an SVG image asset from a SAT math question object and returns the rendered SVG",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-svg-gen-render",
+      "kind": "cli-command",
+      "label": "svg-gen render — generate SVG from a scene description CLI",
+      "evidence_locator": "components/svg-gen/src/svg_gen/cli.py:141",
+      "trigger": "Running `svg-gen render` with a scene description string or file path on the command line",
+      "observed_outcome": "Generates an SVG file from the given scene description using the LLM-backed rendering pipeline and writes to stdout or a file",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-svg-gen-serve",
+      "kind": "cli-command",
+      "label": "svg-gen serve — start svg-gen HTTP microservice",
+      "evidence_locator": "components/svg-gen/src/svg_gen/cli.py:161",
+      "trigger": "Running `svg-gen serve` on the command line",
+      "observed_outcome": "Starts the svg-gen FastAPI web server on port 8001 for handling POST /render requests",
+      "user_role_required": null,
+      "depends_on_surfaces": ["svg-gen-post-render"]
+    },
+    {
+      "id": "image-gen-post-generate",
+      "kind": "public-api",
+      "label": "POST /generate — image-gen microservice image generation endpoint",
+      "evidence_locator": "components/image-gen/src/image_gen/web/app.py:99",
+      "trigger": "HTTP POST request with a prompt JSON body to the image-gen microservice on port 8003",
+      "observed_outcome": "Generates a PNG image from the given text prompt using the OpenAI image generation API and returns the image bytes",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-image-gen-generate",
+      "kind": "cli-command",
+      "label": "image-gen generate — generate an image from a text prompt CLI",
+      "evidence_locator": "components/image-gen/src/image_gen/cli.py:59",
+      "trigger": "Running `image-gen generate <prompt>` on the command line",
+      "observed_outcome": "Generates a PNG image from the text prompt via OpenAI and writes to a file or stdout",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-image-gen-serve",
+      "kind": "cli-command",
+      "label": "image-gen serve — start image-gen HTTP microservice",
+      "evidence_locator": "components/image-gen/src/image_gen/cli.py:88",
+      "trigger": "Running `image-gen serve` on the command line",
+      "observed_outcome": "Starts the image-gen FastAPI web server on port 8003 for handling POST /generate image requests",
+      "user_role_required": null,
+      "depends_on_surfaces": ["image-gen-post-generate"]
+    },
+    {
+      "id": "question-bank-fetcher-serve",
+      "kind": "public-api",
+      "label": "GET /api/topics — question bank fetcher topic listing API",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:148",
+      "trigger": "HTTP GET request to /api/topics on the question-bank-fetcher server",
+      "observed_outcome": "Returns a JSON list of all available SAT topic bundles grouped by assessment type",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "question-bank-fetcher-topic-detail",
+      "kind": "public-api",
+      "label": "GET /api/topic/{slug} — question bank fetcher topic detail API",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:152",
+      "trigger": "HTTP GET request to /api/topic/{slug} on the question-bank-fetcher server",
+      "observed_outcome": "Returns JSON with the full question bundle for the given topic slug including questions and metadata",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "cli-question-bank-fetcher-download",
+      "kind": "cli-command",
+      "label": "question-bank-fetcher download — download SAT question bank CLI",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/cli.py:84",
+      "trigger": "Running `question-bank-fetcher download` with options for assessment, domain, output directory, etc.",
+      "observed_outcome": "Fetches SAT question bundles from the InceptCurriculum API and saves them as JSON files to the local data directory",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-question-bank-fetcher-serve",
+      "kind": "cli-command",
+      "label": "question-bank-fetcher serve — start question bank local HTTP server",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/cli.py:144",
+      "trigger": "Running `question-bank-fetcher serve` with a data directory path on the command line",
+      "observed_outcome": "Starts a local FastAPI server on port 8765 exposing downloaded question bank data via REST API",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "question-viewer-page",
+      "kind": "page",
+      "label": "GET / — question viewer HTML root page",
+      "evidence_locator": "components/question-viewer/src/question_viewer/app.py:685",
+      "trigger": "HTTP GET request to / on the question-viewer server",
+      "observed_outcome": "Renders an HTML page for viewing SAT math questions with their SVG/HTML assets server-side",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "cli-question-viewer-serve",
+      "kind": "cli-command",
+      "label": "question-viewer serve — start question viewer HTTP server",
+      "evidence_locator": "components/question-viewer/src/question_viewer/cli.py:28",
+      "trigger": "Running `question-viewer serve` on the command line",
+      "observed_outcome": "Starts a local FastAPI server on port 7890 for viewing rendered SAT math questions as HTML",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-viewer-page"]
+    },
+    {
+      "id": "cli-gcs-uploader-upload",
+      "kind": "cli-command",
+      "label": "gcs-uploader upload — upload a file to GCS CLI",
+      "evidence_locator": "components/gcs-uploader/src/gcs_uploader/cli.py:41",
+      "trigger": "Running `gcs-uploader upload <FILE_PATH> --destination <GCS_PATH>` on the command line",
+      "observed_outcome": "Uploads a local file to the specified GCS bucket path with optional content-type override",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "svg-gen-get-health",
+      "kind": "public-api",
+      "label": "GET /health — svg-gen microservice health check",
+      "evidence_locator": "components/svg-gen/src/svg_gen/web/app.py:189",
+      "trigger": "HTTP GET request to /health on the svg-gen microservice",
+      "observed_outcome": "Returns JSON health status indicating the svg-gen service is alive",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "image-gen-get-health",
+      "kind": "public-api",
+      "label": "GET /health — image-gen microservice health check",
+      "evidence_locator": "components/image-gen/src/image_gen/web/app.py:70",
+      "trigger": "HTTP GET request to /health on the image-gen microservice",
+      "observed_outcome": "Returns JSON health status indicating the image-gen service is alive",
+      "user_role_required": null,
+      "depends_on_surfaces": []
+    },
+    {
+      "id": "question-bank-fetcher-index-page",
+      "kind": "page",
+      "label": "GET / — question bank fetcher HTML index page",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:165",
+      "trigger": "HTTP GET request to / on the question-bank-fetcher server",
+      "observed_outcome": "Renders an HTML page listing all available SAT topic bundles grouped by assessment type, with links to each topic page",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "question-bank-fetcher-topic-page",
+      "kind": "page",
+      "label": "GET /topic/{slug} — question bank fetcher topic HTML detail page",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:170",
+      "trigger": "HTTP GET request to /topic/{slug} on the question-bank-fetcher server",
+      "observed_outcome": "Renders an HTML page showing the full question bundle for the given topic slug, including all questions and their metadata",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "question-bank-fetcher-pdf-view",
+      "kind": "public-api",
+      "label": "GET /pdf/{slug} — question bank fetcher topic PDF inline view",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:161",
+      "trigger": "HTTP GET request to /pdf/{slug} on the question-bank-fetcher server",
+      "observed_outcome": "Serves the topic PDF file as an inline response (displayed in browser)",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "question-bank-fetcher-pdf-download",
+      "kind": "public-api",
+      "label": "GET /pdf/{slug}/download — question bank fetcher topic PDF file download",
+      "evidence_locator": "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:157",
+      "trigger": "HTTP GET request to /pdf/{slug}/download on the question-bank-fetcher server",
+      "observed_outcome": "Serves the topic PDF as a file attachment (triggers browser download)",
+      "user_role_required": null,
+      "depends_on_surfaces": ["question-bank-fetcher-serve"]
+    },
+    {
+      "id": "cli-sync-sat-to-gcs",
+      "kind": "cli-command",
+      "label": "sync_sat_to_gcs.py — bulk sync SAT curricula directory to GCS",
+      "evidence_locator": "scripts/sync_sat_to_gcs.py:45",
+      "trigger": "Running `python scripts/sync_sat_to_gcs.py [--dry-run]` on the command line",
+      "observed_outcome": "Walks the local curricula/SAT/ directory and uploads all files to the GCS bucket using GcsUploader, making them visible via the /browse, /object, /image, and /view surfaces",
+      "user_role_required": null,
+      "depends_on_surfaces": ["browse-bucket", "object-proxy", "image-viewer", "view-markdown"]
+    }
+  ],
+  "tooling": {
+    "language": "Python 3.13",
+    "web_framework": "FastAPI",
+    "cli_framework": "Click",
+    "workspace_manager": "uv workspace",
+    "deployment": "Google Cloud Run (main API via Dockerfile)",
+    "headless_browser": "Playwright/Chromium (SVG-to-PNG rendering)"
+  },
+  "self_audit": {
+    "sampled_unmatched": [
+      "components/svg-gen/src/svg_gen/web/app.py:459 — POST /test/component (component tester endpoint, internal testing surface not enumerated as a user-facing surface)",
+      "components/svg-gen/src/svg_gen/web/app.py:199 — GET /test/component-tester (HTML test page, internal development tool not enumerated)",
+      "components/question-bank-fetcher/src/question_bank_fetcher/services/server.py:157 — GET /pdf/{slug}/download and GET /pdf/{slug} (PDF download routes; omitted as secondary surface subordinate to question bank fetcher)"
+    ],
+    "notes": "Omitted internal test/debug endpoints (POST /test/component, GET /test/component-tester on svg-gen) as they are developer tooling rather than user-observable surfaces. The question-bank-fetcher PDF routes were omitted to keep the surface list focused; they could be added if PDF delivery is considered a primary user-facing feature. The /api/topics listing surface is used as the representative entry for the question-bank-fetcher server rather than duplicating all child routes."
+  }
+}
