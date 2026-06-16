@@ -1,6 +1,6 @@
 ## Overview
 
-The rebuild delivers a from-scratch `svg-gen` service that turns scene/question requests into SVG diagrams via a constraint-based, fully deterministic render pipeline. The LLM is confined to two roles — feasibility check and natural-language → constraint-graph scene emission — while a `ConstraintSolver`, a global label/angle-mark layout optimizer, and a math-based viewBox trim eliminate the recurring legacy bugs (clipping, mis-aligned angle marks, label/line overlap, inconsistent label distances). The HTTP and CLI contracts match the prior service; Playwright survives only as an opt-in `--verify-bbox` CI tool.
+The rebuild delivers a from-scratch `svg-gen` service that turns scene/question requests into SVG diagrams via a constraint-based, fully deterministic render pipeline. The LLM is confined to a single role — natural-language description → constraint-graph scene JSON — while a `ConstraintSolver`, a global label/angle-mark layout optimizer, and a math-based viewBox trim eliminate the recurring legacy bugs (clipping, mis-aligned angle marks, label/line overlap, inconsistent label distances). The HTTP and CLI contracts match the prior service; Playwright survives only as an opt-in `--verify-bbox` CI tool.
 
 ## Milestones
 
@@ -11,7 +11,7 @@ Milestones are ordered by dependency. Each milestone is shippable end-to-end aga
 3. **M3 — Layout optimizer, math-trim, and verify-bbox.** Implements the global label/angle-mark optimizer, the math-based viewBox union, and the opt-in `--verify-bbox` CLI mode wired into a CI fixture job. Depends on M2 (consumes `SolvedGeometry`). Capabilities: *Global label & angle-mark layout optimizer*, *Math-based SVG trim / viewBox computation*, *--verify-bbox dev/CI tool (new)*.
 4. **M4 — v0 renderer set + deterministic test suite.** Ships the three v0 renderers (`Rectangle`, `Triangle`, `CoordinatePlane`) implementing the constraint-graph renderer contract, plus the deterministic geometric test suite enforcing overlap/clipping/angle-mark/label-collision/consistency rules. Depends on M2 and M3. Capabilities: *Deterministic renderer set (constraint-graph contract)*, *Deterministic geometric test suite (new)*.
 5. **M5 — 30-scene LLM eval gate.** Runs the curated 30-scene constraint-emission eval against the candidate LLM and records first-try success rate. Depends on M2–M4. Capabilities: *30-scene LLM constraint-emission eval gate (new)*. **Decision point**: if success ≥ 85% proceed to M6 primary path; otherwise trigger M6 contingency.
-6. **M6 — LLM planner & feasibility, plus question entry point. GATED by M5.** Primary path: implement the constraint-graph planner with retry-on-`UnsatisfiableConstraintsError`, the feasibility short-circuit, and `POST /image/fromQuestion`, replacing the M1 stub. Contingency (M5 fail): swap the constraint-graph planner for Proposal 2's anchor-model planner emitting anchored references — the deterministic solver, optimizer, renderers, trim and test suite from M2–M4 are reused unchanged. Capabilities: *LLM-driven feasibility check*, *LLM-driven constraint-graph scene planner*, *Question-to-image HTTP endpoint*, and full activation of *Scene-to-SVG rendering HTTP API*.
+6. **M6 — LLM planner & question entry point. GATED by M5.** Primary path: implement the constraint-graph planner with retry-on-validation-error and retry-on-`UnsatisfiableConstraintsError`, plus `POST /image/fromQuestion`, replacing the M1 stub. The planner is also responsible for emitting a typed `UnsupportedRequest` outcome when it cannot represent the question as a constraint-graph scene — there is no separate feasibility LLM call. Contingency (M5 fail): swap the constraint-graph planner for Proposal 2's anchor-model planner emitting anchored references — the deterministic solver, optimizer, renderers, trim and test suite from M2–M4 are reused unchanged. Capabilities: *LLM-driven constraint-graph scene planner*, *Question-to-image HTTP endpoint*, and full activation of *Scene-to-SVG rendering HTTP API*.
 7. **M7 — Component coverage expansion to launch parity.** Ports the remaining component types listed under *Deterministic renderer set* below to the constraint-graph renderer contract, removes the temporary `UnknownComponent` stub for those types, and finalises Playwright runtime removal. Depends on M6.
 
 ### Capability: Scene-to-SVG rendering HTTP API
@@ -41,13 +41,13 @@ Milestones are ordered by dependency. Each milestone is shippable end-to-end aga
 - **Inputs:** JSON body matching the `ImageFromQuestionRequest` schema (question text + structured context fields), parsed into Pydantic.
 - **Outputs:** HTTP 200 with `Content-Type: image/svg+xml` and SVG bytes; also sets the `X-Duration-Ms` response header carrying total wall-clock processing time in milliseconds.
 - **States & edge cases:**
-  - Feasibility check decides the question is not renderable → HTTP **400** with body
+  - Planner declares the question unrenderable (it emits a typed `unsupported` outcome instead of a scene, because no constraint-graph representation fits) → HTTP **400** with body
     ```json
     {"detail": {"error": "UnsupportedRequest",
                 "message": "Request is not supported by the deterministic SVG renderer. Fallback image generation is disabled.",
-                "details": {"feasibility_reasoning": "<free-text LLM explanation>"}}}
+                "details": {"planner_reasoning": "<free-text LLM explanation>"}}}
     ```
-  - Feasibility LLM call itself errors → HTTP **500** `{"detail": {"error": "FeasibilityCheckFailed", "message": "<provider text>", "details": {...}}}`.
+  - Planner LLM call itself errors / times out → HTTP **500** `{"detail": {"error": "PlannerCallFailed", "message": "<provider text>", "details": {...}}}`.
   - Question maps cleanly to a v0-supported component → SVG returned; deterministic test suite passes.
   - Question requires a component type not yet ported (pre-M7) → HTTP **500** `{"detail": {"error": "UnknownComponent", "message": "Component type not supported", "details": {"component_type": "<name>"}}}`.
   - Planner exhausts the retry budget of **3 total attempts** (initial + 2 retries) without producing a solver-feasible scene → HTTP **500** `{"detail": {"error": "SVGGenerationFailed", "message": "Generated scene failed validation after 3 attempts", "details": {...}}}`.
@@ -59,8 +59,8 @@ Milestones are ordered by dependency. Each milestone is shippable end-to-end aga
   - For every question in the M5 eval set that was marked successful, the endpoint returns 200 with `image/svg+xml` and an SVG that passes the deterministic test suite.
   - The response envelope on failure matches the shape above field-for-field; callers can branch on `detail.error` to distinguish the typed cases.
   - `X-Duration-Ms` is set on every response (success and failure).
-  - Latency: p95 < 30000 ms on a warm container across the M5 eval set; per-LLM-attempt timeout 10000 ms so the worst case (3 planner attempts + feasibility) stays bounded.
-  - When the feasibility check passes but the planner retry budget is exhausted, the response body's `error` discriminator is `SVGGenerationFailed` (not `UnsupportedRequest`), so upstream can distinguish "won't render" from "couldn't render".
+  - Latency: p95 < 30000 ms on a warm container across the M5 eval set; per-LLM-attempt timeout 10000 ms so the worst case (3 planner attempts) stays bounded.
+  - When the planner emits a scene (does not flag the request as unsupported) but the retry budget is exhausted, the response body's `error` discriminator is `SVGGenerationFailed` (not `UnsupportedRequest`), so upstream can distinguish "won't render" from "couldn't render".
 
 ### Capability: svg-gen CLI: render
 
@@ -89,37 +89,27 @@ Milestones are ordered by dependency. Each milestone is shippable end-to-end aga
   - `svg-gen serve` on a fresh container responds 200 to `GET /health` within 5 seconds of process start.
   - No Playwright/Chromium runtime dependency is installed in the container image used by `serve`.
 
-### Capability: LLM-driven feasibility check
-
-- **User actions:** Indirect — invoked on every `/image/fromQuestion` call before the planner.
-- **Inputs:** The question payload.
-- **Outputs:** Either a `feasible=true` signal to the planner with the LLM's reasoning, or a typed not-supported response surfaced to the caller.
-- **States & edge cases:**
-  - LLM provider error / timeout → propagates as HTTP **500 FeasibilityCheckFailed** with the underlying provider text in `message`.
-  - Feasibility is borderline / model unsure → must fail-closed (treat as not supported, return 400 UnsupportedRequest).
-  - On "not supported" → returns the 400 envelope under *Question-to-image HTTP endpoint*; the LLM's free-text reasoning is placed in `details.feasibility_reasoning` verbatim. No fixed-catalogue mapping.
-  - `/render` does **not** run this check.
-- **Acceptance criteria:**
-  - For every entry in `tests/fixtures/unsupported_questions/`, the check returns the 400 UnsupportedRequest response without invoking the planner.
-  - For every entry in the M5 eval set marked feasible, the check returns `feasible=true`.
-  - The feasibility check and the planner are the only places the LLM is invoked — verified by a static guard test that fails if any other module imports the LLM client.
-  - Per-attempt LLM call timeout is 10000 ms; on timeout the response is 500 FeasibilityCheckFailed.
-
 ### Capability: LLM-driven constraint-graph scene planner
 
-- **User actions:** Indirect — runs only inside `/image/fromQuestion` after feasibility passes.
-- **Inputs:** The feasibility-approved question plus, on retry, a typed error payload containing either Pydantic validation errors or the solver's minimal infeasible subset.
-- **Outputs:** A Pydantic-validated constraint-graph scene JSON ready for the solver.
+- **User actions:** Indirect — runs only inside `/image/fromQuestion`. The planner is the sole LLM call in the entire service: it both decides whether the question can be expressed as a constraint-graph scene and, if so, emits that scene.
+- **Inputs:** The question payload plus, on retry, a typed error payload containing either Pydantic validation errors or the solver's minimal infeasible subset.
+- **Outputs:** Either (a) a Pydantic-validated constraint-graph scene JSON ready for the solver, or (b) a typed `UnsupportedRequest` outcome carrying free-text reasoning. The two are distinct branches of a single tool/output schema; the LLM picks one per call.
 - **States & edge cases:**
-  - Output fails Pydantic validation → retry with validation errors fed back; counted toward the budget.
-  - Output validates but solver returns `UnsatisfiableConstraintsError` → retry with the error payload; counted toward the budget.
-  - Output validates and solver converges → planner is done.
+  - LLM emits `unsupported` → surfaces as HTTP **400 UnsupportedRequest** per the *Question-to-image HTTP endpoint* contract; reasoning is placed in `details.planner_reasoning` verbatim. No fixed-catalogue mapping. Retries are **not** attempted on `unsupported` (the LLM has decided).
+  - LLM emits a scene that fails Pydantic validation → retry with validation errors fed back; counted toward the budget.
+  - LLM emits a scene that validates but the solver returns `UnsatisfiableConstraintsError` → retry with the error payload; counted toward the budget.
+  - LLM emits a scene that validates and the solver converges → planner is done.
+  - LLM provider error / timeout on any attempt → HTTP **500 PlannerCallFailed** with the provider text in `message`. Per-attempt LLM timeout is 10000 ms.
   - **Retry budget: 3 total attempts (initial + 2 retries)**. On exhaustion the caller sees `500 SVGGenerationFailed` with `message: "Generated scene failed validation after 3 attempts"`.
+  - Borderline / unsure: planner must fail-closed — if it cannot commit to a scene, it must emit `unsupported`.
+  - `/render` does **not** call the planner.
   - Contingency (M5 gate fail at < 85% first-try success): planner is replaced by the Proposal 2 anchor-model variant emitting anchored references; everything downstream is unchanged.
 - **Acceptance criteria:**
   - On the M5 eval set the planner produces a solver-feasible scene on the first attempt for ≥ 85% of scenes when the primary constraint-graph path is shipped.
   - Retries never exceed 3 total attempts; the count is logged.
   - The planner output's Pydantic schema rejects any field shaped like a coordinate (no `x`, `y`, `coordinates`, `vertices: [[number, number], …]`), enforced at schema time rather than by post-hoc check.
+  - For every entry in `tests/fixtures/unsupported_questions/`, the planner emits `unsupported` on the first attempt and the caller receives the 400 envelope without further retries.
+  - The planner is the **only** place the LLM client is imported, verified by a static guard test that fails if any other module imports it.
 
 ### Capability: Deterministic constraint solver
 
@@ -229,7 +219,7 @@ Milestones are ordered by dependency. Each milestone is shippable end-to-end aga
   - **Curation rule** (defined for this rebuild since no prior process exists): the 30 scenes are sampled from the upstream question source's recent traffic such that each v0 component type contributes ≥ 5 scenes and the remaining slots cover at least 5 distinct launch-parity component types. Sampling seed and snapshot timestamp are committed alongside the eval artifact.
 - **Outputs:** A first-try success rate, a per-scene pass/fail table, and a recorded JSON artifact committed to `.rebaseai/plan/eval/30-scene-{date}.json`.
 - **States & edge cases:**
-  - **Success definition per scene**: (a) feasibility check returns feasible, (b) planner emits a Pydantic-validating constraint-graph scene on the first attempt, (c) the solver converges on that scene, and (d) the rendered SVG passes the deterministic test suite end-to-end. All four required.
+  - **Success definition per scene**: (a) the planner emits a Pydantic-validating constraint-graph scene (not an `unsupported` outcome) on the first attempt, (b) the solver converges on that scene, and (c) the rendered SVG passes the deterministic test suite end-to-end. All three required.
   - **Threshold: ≥ 85%** first-try success on the 30-scene set ⇒ M6 primary path approved; **< 85%** ⇒ M6 contingency (anchor-model planner).
   - LLM provider unreachable / quota-exhausted during eval → eval is marked invalid and rerun; the artifact is not committed in invalid state.
   - **Sign-off**: rebuild tech lead records the path choice in the same commit as the artifact.
