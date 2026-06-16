@@ -54,14 +54,14 @@
   },
   {
     "srNo": 6,
-    "milestone": "M6 — LLM planner & feasibility, plus question entry point",
-    "title": "LLM feasibility check, constraint-graph planner (or anchor-model contingency), and /image/fromQuestion endpoint",
+    "milestone": "M6 — LLM planner & question entry point",
+    "title": "Constraint-graph planner (or anchor-model contingency) and /image/fromQuestion endpoint",
     "depends_on_srNos": [
       5
     ],
-    "issue_number": 6,
-    "url": "https://github.com/trilogy-group/svg-gen/issues/6",
-    "created": false
+    "issue_number": 8,
+    "url": "https://github.com/trilogy-group/svg-gen/issues/8",
+    "created": true
   },
   {
     "srNo": 7,
